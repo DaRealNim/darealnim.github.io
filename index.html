@@ -1,1 +1,58 @@
-Bruh
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chess Coach</title>
+        <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/chessboard-1.0.0.css">
+        <script src="js/vendor/jquery-1.12.4.min.js"></script>
+        <script src="js/vendor/chessboard-1.0.0.js"></script>
+        <script src="js/vendor/chess.js"></script>
+        <script src="js/vendor/stockfish.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/openings.js"></script>
+        <script src="js/coach.js"></script>
+        <script src="js/boardanalysis.js"></script>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+    </head>
+    <body>
+        <header>
+            <h1>Nim's chess coach</h1>
+        </header>
+        <div id="container">
+            <div id="board"></div>
+            <div id="chat">
+                <div id="chatbuttons">
+                    <br>
+                    <button accesskey="h" id="cluebutton" onclick="giveclue()" visible=false>Get a hint</button>
+                    <button id="prevbestmovebutton" onclick="givePrevBest()">What should I have done?</button>
+                    <button id="evaluatebutton" onclick="giveEval()">Who's winning?</button>
+                    <button id="whitechoicebutton" onclick="setColor('white')">White</button>
+                    <button id="blackchoicebutton" onclick="setColor('black')">Black</button>
+                    <button id="randomchoicebutton" onclick="setColor('random')">Random</button>
+
+                </div>
+            </div>
+            <div id="panel">
+                <p>Playing strength</p>
+                <input type="range" min="0" max="20" value="5" class="slider" id="skill" oninput="updateSkillLevel()">
+                <center><p id="skillUI">0 / 20</p></center>
+                <p>Search depth</p>
+                <input type="range" min="1" max="25" value="3" class="slider" id="depth" oninput="updateSearchDepth()">
+                <center><p id="depthUI">1 / 25</p></center>
+                <label>Promote to</label>
+                <select name="promote-to" id="promote">
+                    <option value="q">Queen</option>
+                    <option value="n">Knight</option>
+                    <option value="b">Bishop</option>
+                    <option value="r">Rook</option>
+                </select>
+                <p>Load or export FEN</p>
+                <input type="text" id="feninput"/>
+                <button id="fenbutton" onclick="loadFEN()">Load FEN</button>
+            </div>
+        </div>
+        
+        <script src="js/main.js"></script>
+    </body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chess</title>
+        <link rel="stylesheet" href="css/chessboard-1.0.0.css">
+        <script src="js/jquery-1.12.4.min.js"></script>
+        <script src="js/chessboard-1.0.0.js"></script>
+        <script src="js/chess.js"></script>
+        <script src="js/stockfish.js"></script>
+        <script src="js/sfwrap.js"></script>
+        <script src="js/utils.js"></script>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+    </head>
+    <body>
+        <style>
+            .highlight-check {
+                box-shadow: inset 0 0 3px 3px rgb(241, 82, 82);
+            }
+            .highlight-bestmove {
+                box-shadow: inset 0 0 3px 3px lightskyblue;
+            }
+
+            .dot {
+                height: 25px;
+                width: 25px;
+                background-color: rgb(85, 85, 85);
+                border-radius: 50%;
+                margin-left: 37px;
+                margin-top: 37px;
+            }
+
+            #board {
+                display : inline-block;
+            }
+
+            #control-panel {
+                display : inline-block;
+            }
+
+            
+
+        </style>
+
+        <div id="board" style="width: 800px"></div>
+        <div id="control-panel">
+            <h2 id="analysis"></h2>
+            <button accesskey="h" id="clue" onclick="giveclue()">Help me</button>
+        </div>
+
+
+
+        
+        <script>
+            const chess = new Chess();
+            var board;
+            var $board = $('#board')
+            var stockfish_depth = 2;
+            var stockfish_skill = 0;
+
+            var oldscore = 0;
+            var score = 0;
+            var canplay = false;
+
+            var lastwhitemove = "";
+            var bestmoveforwhite = "";
+            var stockfish_todo = "";
+            var nxtBlackMove = null;
+
+            function giveclue() {
+                $board.find('.square-' + bestmoveforwhite.slice(0, 2)).addClass('highlight-bestmove')
+                $board.find('.square-' + bestmoveforwhite.slice(2, 4)).addClass('highlight-bestmove')
+            }
+
+            Stockfish().then((sf) => {
+
+                const sfwrapper = new StockfishWrapper(sf);
+
+                board = ChessBoard('board', {
+                    draggable: true,
+
+                    onDragStart: (src, piece, position, orientation) => {
+                        let legalmoves = chess.moves({square: src, verbose: true});
+                        legalmoves.forEach((m) => $('.square-'+m.to).prepend('<div class="dot"/>'));
+                    },
+
+                    onDrop: (src, target, piece, newpos, oldpos, orientation) => {
+                        if (canplay) {
+                            let ispromotion = (piece.charAt(1) == 'P' && src.charAt(1) == '7' && target.charAt(1) == '8')
+                            let move;
+                            console.log(ispromotion);
+                            move = chess.move({from: src, to: target, promotion: ispromotion ? "q" : ""});
+                            if (move == null) {
+                                $('div.dot').remove();
+                                return "snapback";
+                            }
+                            console.log(move);
+                            canplay = false
+                            lastwhitemove = src+target;
+                            postMove(move, board, chess, $board);
+                            sfwrapper.update(Chessboard.objToFen(newpos));
+                            $('div.dot').remove();
+                            sfwrapper.go(15, 20);
+                            let res = sfwrapper.getResult();
+                            score = res.score;
+                            //-----------------------
+                            board.position(chess.fen());
+                            console.log("    [scoreanalysis] last move : " + (score-oldscore));
+                            if (bestmoveforwhite == lastwhitemove)
+                                $("#analysis").html("best move");
+                            else
+                                $("#analysis").html(score_to_movestrength(score-oldscore));
+                            console.log("    [scoreanalysis] score : " + score);
+                            // oldscore = score;
+                            sfwrapper.go(stockfish_depth, stockfish_skill);
+                            res = sfwrapper.getResult();
+                            //-----------------------
+                            console.log("    [play] bestmove "+res.bestmove);
+                            move = res.bestmove.slice(0, 2) + "-" + res.bestmove.slice(2, 4);
+                            nxtBlackMove = chess.move(move, { sloppy: true });
+                            sfwrapper.update(chess.fen());
+                            sfwrapper.go(15, 20);
+                            res = sfwrapper.getResult();
+                            oldscore = res.score;
+                            //-----------------------
+                            console.log("    [analysis] best for white is "+res.bestmove);
+                            bestmoveforwhite = res.bestmove;
+                            $board.find('.' + 'square-55d63').removeClass('highlight-bestmove');
+                            board.move(nxtBlackMove.from + "-" + nxtBlackMove.to);
+                            postMove(nxtBlackMove, board, chess, $board);
+                            canplay = true;
+                        } else {
+                            $('div.dot').remove();  
+                            return "snapback";
+                        }
+                        
+                    },
+
+                });
+
+                sfwrapper.newGame();
+                board.start(true);
+                canplay = true;
+                
+            });
+        </script>
+    </body>
+</html>
